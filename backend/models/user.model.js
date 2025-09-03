@@ -23,8 +23,10 @@ userSchema.statics.hashPassword = async function (password) {
   return await bcrypt.hash(password, 10);
 };
 
-userSchema.statics.isValidPassword = async function (password) {
-  return await bcrypt.compare(password, this.password);
+userSchema.methods.isValidPassword = async function (password) {
+    console.log('Password from Login Attempt:', password);
+    console.log('Hashed Password from DB:', this.password);
+    return await bcrypt.compare(password, this.password);
 };
 
 userSchema.methods.generateJWT = function () {
