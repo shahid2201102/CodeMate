@@ -1,11 +1,12 @@
-import React from "react";
+import React, {useContext} from "react";
+import { UserContext } from "../context/user.context.jsx";
 
 const Home = () => {
+  const { user } = useContext(UserContext);
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-        <div>Home</div>
-    </div>
-  );
+    <div>{JSON.stringify(user)}</div>
+  )
 }
 
 export default Home;
