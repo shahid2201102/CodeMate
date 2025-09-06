@@ -29,79 +29,79 @@ export const createProject = async (req, res) => {
 
 }
 
-// export const getAllProject = async (req, res) => {
-//     try {
+export const getAllProject = async (req, res) => {
+    try {
 
-//         const loggedInUser = await userModel.findOne({
-//             email: req.user.email
-//         })
+        const loggedInUser = await userModel.findOne({
+            email: req.user.email
+        })
 
-//         const allUserProjects = await projectService.getAllProjectByUserId({
-//             userId: loggedInUser._id
-//         })
+        const allUserProjects = await projectService.getAllProjectByUserId({
+            userId: loggedInUser._id
+        })
 
-//         return res.status(200).json({
-//             projects: allUserProjects
-//         })
+        return res.status(200).json({
+            projects: allUserProjects
+        })
 
-//     } catch (err) {
-//         console.log(err)
-//         res.status(400).json({ error: err.message })
-//     }
-// }
+    } catch (err) {
+        console.log(err)
+        res.status(400).json({ error: err.message })
+    }
+}
 
-// export const addUserToProject = async (req, res) => {
-//     const errors = validationResult(req);
+export const addUserToProject = async (req, res) => {
+    const errors = validationResult(req);
 
-//     if (!errors.isEmpty()) {
-//         return res.status(400).json({ errors: errors.array() });
-//     }
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
 
-//     try {
+    try {
 
-//         const { projectId, users } = req.body
+        const { projectId, users } = req.body
 
-//         const loggedInUser = await userModel.findOne({
-//             email: req.user.email
-//         })
-
-
-//         const project = await projectService.addUsersToProject({
-//             projectId,
-//             users,
-//             userId: loggedInUser._id
-//         })
-
-//         return res.status(200).json({
-//             project,
-//         })
-
-//     } catch (err) {
-//         console.log(err)
-//         res.status(400).json({ error: err.message })
-//     }
+        const loggedInUser = await userModel.findOne({
+            email: req.user.email
+        })
 
 
-// }
+        const project = await projectService.addUsersToProject({
+            projectId,
+            users,
+            userId: loggedInUser._id
+        })
 
-// export const getProjectById = async (req, res) => {
+        return res.status(200).json({
+            project,
+        })
 
-//     const { projectId } = req.params;
+    } catch (err) {
+        console.log(err)
+        res.status(400).json({ error: err.message })
+    }
 
-//     try {
 
-//         const project = await projectService.getProjectById({ projectId });
+}
 
-//         return res.status(200).json({
-//             project
-//         })
+export const getProjectById = async (req, res) => {
 
-//     } catch (err) {
-//         console.log(err)
-//         res.status(400).json({ error: err.message })
-//     }
+    const { projectId } = req.params;
 
-// }
+    try {
+
+        const project = await projectService.getProjectById({ projectId });
+
+        return res.status(200).json({
+            project
+        })
+
+    } catch (err) {
+        console.log(err)
+        res.status(400).json({ error: err.message })
+    }
+
+}
 
 // export const updateFileTree = async (req, res) => {
 //     const errors = validationResult(req);
