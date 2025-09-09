@@ -3,40 +3,48 @@ import { UserContext } from '../context/user.context'
 import axios from "../config/axios"
 import { useNavigate } from 'react-router-dom'
 
+
 const Home = () => {
+
 
     const { user } = useContext(UserContext)
     const [ isModalOpen, setIsModalOpen ] = useState(false)
     const [ projectName, setProjectName ] = useState('')
-   // const [ project, setProject ] = useState([])
+    const [ projects, setProjects ] = useState([]) // Renamed for clarity
 
     const navigate = useNavigate()
 
+    // Function to fetch all projects
+    const fetchProjects = () => {
+        axios.get('/projects/all').then((res) => {
+            setProjects(res.data.projects) // Use the renamed state setter
+        }).catch(err => {
+            console.log(err)
+        })
+    }
+
     function createProject(e) {
         e.preventDefault()
-        console.log({ projectName })
-
+        
         axios.post('/projects/create', {
             name: projectName,
         })
             .then((res) => {
                 console.log(res)
                 setIsModalOpen(false)
+                setProjectName('') // Clear the input field
+                fetchProjects() // *** RE-FETCH PROJECTS AFTER CREATING A NEW ONE ***
             })
             .catch((error) => {
                 console.log(error)
             })
     }
 
-    // useEffect(() => {
-    //     axios.get('/projects/all').then((res) => {
-    //         setProject(res.data.projects)
 
-    //     }).catch(err => {
-    //         console.log(err)
-    //     })
+    useEffect(() => {
+        fetchProjects() // Initial fetch when the component mounts
+    }, [])
 
-    // }, [])
 
     return (
         <main className='p-4'>
@@ -47,8 +55,9 @@ const Home = () => {
                     New Project
                     <i className="ri-link ml-2"></i>
                 </button>
-                {/* {
-                    project.map((project) => (
+                {
+                    // Filter for valid projects before mapping
+                    projects && projects.filter(p => p && p._id).map((project) => (
                         <div key={project._id}
                             onClick={() => {
                                 navigate(`/project`, {
@@ -60,17 +69,21 @@ const Home = () => {
                                 className='font-semibold'
                             >{project.name}</h2>
 
+
                             <div className="flex gap-2">
                                 <p> <small> <i className="ri-user-line"></i> Collaborators</small> :</p>
                                 {project.users.length}
                             </div>
 
+
                         </div>
                     ))
-                } */}
+                }
+
 
 
             </div>
+
 
             {isModalOpen && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
@@ -94,8 +107,10 @@ const Home = () => {
             )}
 
 
+
         </main>
     )
 }
+
 
 export default Home

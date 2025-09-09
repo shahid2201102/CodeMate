@@ -3,6 +3,7 @@ import {Route, Routes, BrowserRouter} from 'react-router-dom'
 import Login from '../screens/Login.jsx'
 import Register from '../screens/Register.jsx'
 import Home from '../screens/Home.jsx' 
+import Project from '../screens/Project.jsx'
 
 
 const AppRoutes = () => {
@@ -12,6 +13,7 @@ const AppRoutes = () => {
         <Route path='/' element={<Home />} />
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
+        <Route path='/project' element={<Project />} />
       </Routes>
     </BrowserRouter>
   )
