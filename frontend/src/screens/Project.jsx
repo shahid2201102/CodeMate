@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from '../config/axios';
+import { initializeSocket, receiveMessage, sendMessage } from '../config/socket';
 
 const Project = () => {
     const location = useLocation();
@@ -10,6 +11,7 @@ const Project = () => {
     const [selectedUserIds, setSelectedUserIds] = useState(new Set());
     const [project, setProject] = useState(location.state?.project || {});
     const [users, setUsers] = useState([]);
+
 
     // This logic is now simpler and more direct
     const handleUserClick = (id) => {
@@ -41,14 +43,20 @@ const Project = () => {
     };
 
     useEffect(() => {
+        const socket = initializeSocket();
+        // If initialization fails (e.g., no token), the socket will be null. Stop here.
+        if (!socket) {
+            return; 
+        }
+        
         // Guard clause to prevent API calls if there's no project ID
         if (!project._id) return;
-
+       // initializeSocket();
         axios.get(`/projects/get-project/${project._id}`).then(res => {
             setProject(res.data.project);
         });
 
-        axios.get('/users/all').then(res => {
+        axios.get('/users/all').then(res => { 
             setUsers(res.data.users);
         }).catch(err => {
             console.error("Error fetching users:", err);
