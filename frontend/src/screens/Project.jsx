@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from '../config/axios';
 import { initializeSocket, receiveMessage, sendMessage } from '../config/socket';
+import { UserContext } from '../context/user.context';
 
 const Project = () => {
     const location = useLocation();
+    
 
     const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedUserIds, setSelectedUserIds] = useState(new Set());
     const [project, setProject] = useState(location.state?.project || {});
     const [users, setUsers] = useState([]);
+    const [ message, setMessage ] = useState('')
+    const { user } = useContext(UserContext);
 
 
     // This logic is now simpler and more direct
@@ -42,16 +46,27 @@ const Project = () => {
         });
     };
 
+    function send(){
+        sendMessage('project-message', { 
+            message,
+            sender: user._id
+        });
+        setMessage('');
+    }
+
     useEffect(() => {
-        const socket = initializeSocket();
-        // If initialization fails (e.g., no token), the socket will be null. Stop here.
-        if (!socket) {
-            return; 
-        }
-        
-        // Guard clause to prevent API calls if there's no project ID
-        if (!project._id) return;
-       // initializeSocket();
+        const socket = initializeSocket(project._id);
+        if (!socket) return;
+
+        // Define the handler function
+        const handler = (data) => {
+            console.log(data);
+        };
+
+        // Add the listener
+        socket.on('project-message', handler);
+
+        // Fetch project and users
         axios.get(`/projects/get-project/${project._id}`).then(res => {
             setProject(res.data.project);
         });
@@ -61,8 +76,13 @@ const Project = () => {
         }).catch(err => {
             console.error("Error fetching users:", err);
         });
-    }, [project._id]); // Added dependency to refetch if project._id changes
 
+        // Cleanup: remove the listener when project._id changes or component unmounts
+        return () => {
+            socket.off('project-message', handler);
+        };
+    }, [project._id]);
+    
     return (
         <main className='h-screen w-screen flex'>
             <section className="left relative flex flex-col h-screen min-w-96 bg-slate-300">
@@ -80,8 +100,13 @@ const Project = () => {
                 {/* Conversation Area */}
                 <div className="conversation-area pt-14 pb-10 flex-grow flex flex-col h-full relative">
                     <div className="inputField w-full flex absolute bottom-0">
-                        <input className='p-2 px-4 border-none outline-none flex-grow' type="text" placeholder='Enter message' />
-                        <button className='px-5 bg-slate-950 text-white'><i className="ri-send-plane-fill"></i></button>
+                        <input 
+                        value={message}
+                        onChange={e => setMessage(e.target.value)}
+                        className='p-2 px-4 border-none outline-none flex-grow bg-white' type="text" placeholder='Enter message' />
+                        <button 
+                            onClick={send}
+                        className='px-5 bg-slate-950 text-white'><i className="ri-send-plane-fill"></i></button>
                     </div>
                 </div>
 
