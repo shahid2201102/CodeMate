@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from '../config/axios';
 import { initializeSocket, receiveMessage, sendMessage } from '../config/socket';
@@ -15,6 +15,8 @@ const Project = () => {
     const [users, setUsers] = useState([]);
     const [ message, setMessage ] = useState('')
     const { user } = useContext(UserContext);
+    const messageBox = useRef(null);
+
 
 
     // This logic is now simpler and more direct
@@ -49,8 +51,9 @@ const Project = () => {
     function send(){
         sendMessage('project-message', { 
             message,
-            sender: user._id
+            sender: user
         });
+        appendOutgoingMessage(message);
         setMessage('');
     }
 
@@ -61,6 +64,7 @@ const Project = () => {
         // Define the handler function
         const handler = (data) => {
             console.log(data);
+            appendIncomingMessage(data);
         };
 
         // Add the listener
@@ -82,10 +86,49 @@ const Project = () => {
             socket.off('project-message', handler);
         };
     }, [project._id]);
-    
+
+    function appendIncomingMessage(messageObject) {
+        const messageBox = document.querySelector('.message-box');
+        const message = document.createElement('div');
+
+        // Styling for incoming messages
+        message.classList.add('message', 'max-w-xs', 'p-3', 'rounded-xl', 'bg-slate-200', 'mb-2', 'flex', 'flex-col', 'gap-1');
+        
+        message.innerHTML = `
+            <small class='opacity-70 text-xs'>${messageObject.sender.email}</small>
+            <p class='text-sm'>${messageObject.message}</p>
+        `;
+        
+        messageBox.appendChild(message);
+        scrollToBottom();
+    }
+
+    function appendOutgoingMessage(message){
+        const messageBox = document.querySelector('.message-box');
+        const newMessage = document.createElement('div');
+        newMessage.classList.add('message', 'ml-auto', 'max-w-xs', 'p-3', 'rounded-xl', 'bg-blue-500', 'text-white', 'mb-2', 'flex', 'flex-col', 'gap-1');
+        newMessage.innerHTML = `
+            <small class='opacity-70 text-xs'>${user.email}</small>
+            <p class='text-sm'>${message}</p>
+        `;
+        messageBox.appendChild(newMessage);
+        scrollToBottom();
+    }
+
+     function scrollToBottom() {
+        // Add a check for messageBox.current
+        if (messageBox.current) {
+            // Use setTimeout to run after the DOM has updated
+            setTimeout(() => {
+                messageBox.current.scrollTop = messageBox.current.scrollHeight;
+            }, 0);
+        }
+    }
+
+
     return (
         <main className='h-screen w-screen flex'>
-            <section className="left relative flex flex-col h-screen min-w-96 bg-slate-300">
+            <section className="left fixed left-0 top-0 flex flex-col h-screen min-w-96 bg-slate-300">
                 {/* Header */}
                 <header className='flex justify-between items-center p-2 px-4 w-full bg-slate-100 absolute z-10 top-0'>
                     <button className='flex gap-2' onClick={() => setIsModalOpen(true)}>
@@ -99,6 +142,11 @@ const Project = () => {
 
                 {/* Conversation Area */}
                 <div className="conversation-area pt-14 pb-10 flex-grow flex flex-col h-full relative">
+                    <div
+                        ref={messageBox}
+                        className="message-box p-1 flex-grow flex flex-col gap-1 overflow-auto max-h-full scrollbar-hide">
+                        
+                    </div>
                     <div className="inputField w-full flex absolute bottom-0">
                         <input 
                         value={message}
@@ -130,7 +178,7 @@ const Project = () => {
                         ))}
                     </div>
                 </div>
-            </section>
+            </section> 
 
             {/* Modal for Adding Collaborators */}
             {isModalOpen && (
