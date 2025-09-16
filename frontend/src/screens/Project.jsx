@@ -3,11 +3,12 @@ import { useLocation } from 'react-router-dom';
 import axios from '../config/axios';
 import { initializeSocket, receiveMessage, sendMessage } from '../config/socket';
 import { UserContext } from '../context/user.context';
+import Markdown from 'markdown-to-jsx'
+
 
 const Project = () => {
     const location = useLocation();
     
-
     const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedUserIds, setSelectedUserIds] = useState(new Set());
@@ -16,11 +17,27 @@ const Project = () => {
     const [ message, setMessage ] = useState('')
     const { user } = useContext(UserContext);
     const messageBox = useRef(null);
+    const [ messages, setMessages ] = useState([])
 
+
+    function SyntaxHighlightedCode(props) {
+        const ref = useRef(null) 
+
+        React.useEffect(() => {
+            if (ref.current && props.className?.includes('lang-') && window.hljs) {
+                window.hljs.highlightElement(ref.current)
+
+                // hljs won't reprocess the element unless this attribute is removed
+                ref.current.removeAttribute('data-highlighted')
+            }
+        }, [ props.className, props.children ])
+
+        return <code {...props} ref={ref} />
+    }
 
 
     // This logic is now simpler and more direct
-    const handleUserClick = (id) => {
+    const handleUserClick = (id) => {  
         setSelectedUserIds(prevIds => {
             const newIds = new Set(prevIds);
             if (newIds.has(id)) {
@@ -48,14 +65,18 @@ const Project = () => {
         });
     };
 
-    function send(){
+    const send = () => {
         sendMessage('project-message', { 
             message,
             sender: user
         });
-        appendOutgoingMessage(message);
+        setMessages(prevMessages => {
+            const updated = [...prevMessages, { sender: user, message }];
+            setTimeout(scrollToBottom, 0); // Scroll after DOM updates
+            return updated;
+        });
         setMessage('');
-    }
+    };
 
     useEffect(() => {
         const socket = initializeSocket(project._id);
@@ -63,12 +84,15 @@ const Project = () => {
 
         // Define the handler function
         const handler = (data) => {
-            console.log(data);
-            appendIncomingMessage(data);
+            setMessages(prevMessages => {
+                const updated = [...prevMessages, data];
+                setTimeout(scrollToBottom, 0); // Scroll after DOM updates
+                return updated;
+            });
         };
 
         // Add the listener
-        socket.on('project-message', handler);
+        socket.on('project-message', handler);  
 
         // Fetch project and users
         axios.get(`/projects/get-project/${project._id}`).then(res => {
@@ -87,33 +111,42 @@ const Project = () => {
         };
     }, [project._id]);
 
-    function appendIncomingMessage(messageObject) {
-        const messageBox = document.querySelector('.message-box');
-        const message = document.createElement('div');
+    // function appendIncomingMessage(messageObject) {
+    //     const messageBox = document.querySelector('.message-box');
+    //     const message = document.createElement('div');
 
-        // Styling for incoming messages
-        message.classList.add('message', 'max-w-xs', 'p-3', 'rounded-xl', 'bg-slate-200', 'mb-2', 'flex', 'flex-col', 'gap-1');
-        
-        message.innerHTML = `
-            <small class='opacity-70 text-xs'>${messageObject.sender.email}</small>
-            <p class='text-sm'>${messageObject.message}</p>
-        `;
-        
-        messageBox.appendChild(message);
-        scrollToBottom();
-    }
+    //     // Styling for incoming messages
+    //     message.classList.add('message', 'max-w-xs', 'p-3', 'rounded-xl', 'bg-slate-200', 'mb-2', 'flex', 'flex-col', 'gap-1');
 
-    function appendOutgoingMessage(message){
-        const messageBox = document.querySelector('.message-box');
-        const newMessage = document.createElement('div');
-        newMessage.classList.add('message', 'ml-auto', 'max-w-xs', 'p-3', 'rounded-xl', 'bg-blue-500', 'text-white', 'mb-2', 'flex', 'flex-col', 'gap-1');
-        newMessage.innerHTML = `
-            <small class='opacity-70 text-xs'>${user.email}</small>
-            <p class='text-sm'>${message}</p>
-        `;
-        messageBox.appendChild(newMessage);
-        scrollToBottom();
-    }
+    //     if(messageObject.sender._id === 'ai'){
+    //         const markDown = <Markdown>{messageObject.message}</Markdown>;
+    //         message.innerHTML = `
+    //         <small class='opacity-70 text-xs'>${messageObject.sender.email}</small>
+    //         <div class='text-sm'>${markDown}</div>
+    //     `;
+    //     } 
+    //     else {
+    //         message.innerHTML = `
+    //         <small class='opacity-70 text-xs'>${messageObject.sender.email}</small>
+    //         <p class='text-sm'>${messageObject.message}</p>
+    //     `;
+    //     }
+        
+    //     messageBox.appendChild(message);
+    //     scrollToBottom();
+    // }
+
+    // function appendOutgoingMessage(message){
+    //     const messageBox = document.querySelector('.message-box');
+    //     const newMessage = document.createElement('div');
+    //     newMessage.classList.add('message', 'ml-auto', 'max-w-xs', 'p-3', 'rounded-xl', 'bg-blue-500', 'text-white', 'mb-2', 'flex', 'flex-col', 'gap-1');
+    //     newMessage.innerHTML = `
+    //         <small class='opacity-70 text-xs'>${user.email}</small>
+    //         <p class='text-sm'>${message}</p>
+    //     `;
+    //     messageBox.appendChild(newMessage);
+    //     scrollToBottom();
+    // }
 
      function scrollToBottom() {
         // Add a check for messageBox.current
@@ -145,6 +178,30 @@ const Project = () => {
                     <div
                         ref={messageBox}
                         className="message-box p-1 flex-grow flex flex-col gap-1 overflow-auto max-h-full scrollbar-hide">
+                         {messages.map((msg, index) => (
+                            <div key={index} className={`${msg.sender._id === 'ai' ? 'max-w-80' : 'max-w-52'} ${msg.sender._id == user._id.toString() && 'ml-auto'}  message flex flex-col p-2 bg-slate-50 w-fit rounded-md`}>
+                                <small className='opacity-65 text-xs'>{msg.sender.email}</small>
+                                <div className='text-sm'>
+                                    {msg.sender._id === 'ai' ? (
+                                        <div className='overflow-x-auto bg-slate-950 text-white p-2 rounded-md'>
+                                            <Markdown
+                                                options={{
+                                                    overrides: {
+                                                        code: {
+                                                            component: SyntaxHighlightedCode,
+                                                        },
+                                                    },
+                                                }}
+                                            >
+                                                {msg.message}
+                                            </Markdown>
+                                        </div>
+                                    ) : (
+                                        <p>{msg.message}</p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
                         
                     </div>
                     <div className="inputField w-full flex absolute bottom-0">
